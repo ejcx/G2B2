@@ -15,4 +15,4 @@ A dictionary of newline delimited passwords you would like to try
 A particular secret you would like to guess.
 
 ###Example
-./g2b2 -n=session\-name -v=MTQyNDQ4OTEwMHxEdi1CQkFFQ180SUFBUkFCRUFBQU1QLUNBQUlHYzNSeWFXNW5EQVVBQTJadmJ3WnpkSEpwYm1jTUJRQURZbUZ5QTJsdWRBUUNBRlFEYVc1MEJBSUFWZz09fEX2BtX_bJQshoq38z5ByNLvtxl3xixPriJ4Xe9ywKfq -f=asdf -s=something\-very\-secret
+    ./g2b2 -n=session\-name -v=MTQyNDQ4OTEwMHxEdi1CQkFFQ180SUFBUkFCRUFBQU1QLUNBQUlHYzNSeWFXNW5EQVVBQTJadmJ3WnpkSEpwYm1jTUJRQURZbUZ5QTJsdWRBUUNBRlFEYVc1MEJBSUFWZz09fEX2BtX_bJQshoq38z5ByNLvtxl3xixPriJ4Xe9ywKfq -f=asdf -s=something\-very\-secret
