@@ -108,5 +108,5 @@ var default_pws = []string{
         "kjsd2hgi3rez3aeltkxv",
         "GOTLongLiveSessionStore",
         "s3cr3t",
-//        "something-very-secret",
+        "something-very-secret",
 }
