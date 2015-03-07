@@ -100,9 +100,6 @@ func main(){
                 if len(*secret) == 0 {
                         log.Fatalf("Secret password is required to reconstruct a session.\n")
                 }
-                if len(*name) == 0 {
-                        log.Fatalf("Name of the cookie you are creating must be set.\n")
-                }
                 rebuild_session(file, secret, name)
         } else {
                 if len(*sess) == 0 {
