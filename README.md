@@ -24,8 +24,10 @@ Set this flag to indicate that you wish to rebuild the session, otherwise it is 
 
 ###Dependencies
 This program depends on two parts of the Gorilla session package.
+
     go get github.com/gorilla/sessions
     go get github.com/gorilla/securecookie
+
 ###Example
 ####Attacking
     ./g2b2 -n session-name -v MTQyNDQ4OTEwMHxEdi1CQkFFQ180SUFBUkFCRUFBQU1QLUNBQUlHYzNSeWFXNW5EQVVBQTJadmJ3WnpkSEpwYm1jTUJRQURZbUZ5QTJsdWRBUUNBRlFEYVc1MEJBSUFWZz09fEX2BtX_bJQshoq38z5ByNLvtxl3xixPriJ4Xe9ywKfq -s something-very-secret
