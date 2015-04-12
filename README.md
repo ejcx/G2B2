@@ -30,6 +30,6 @@ This program depends on two parts of the Gorilla session package.
 
 ###Example
 ####Attacking
-    ./g2b2 -n session-name -v MTQyNDQ4OTEwMHxEdi1CQkFFQ180SUFBUkFCRUFBQU1QLUNBQUlHYzNSeWFXNW5EQVVBQTJadmJ3WnpkSEpwYm1jTUJRQURZbUZ5QTJsdWRBUUNBRlFEYVc1MEJBSUFWZz09fEX2BtX_bJQshoq38z5ByNLvtxl3xixPriJ4Xe9ywKfq -s something-very-secret
+    ./g2b2 -n session-name -v MTQyODg2MTkwOHxEdi1CQkFFQ180SUFBUkFCRUFBQU1QLUNBQUlHYzNSeWFXNW5EQVVBQTJadmJ3WnpkSEpwYm1jTUJRQURZbUZ5QTJsdWRBUUNBRlFEYVc1MEJBSUFWZz09fGZWZuwf1oFeGx0R7d7EzCqJix5E-N4AGeXlMXNb0Uju
 ####Rebuilding
     ./g2b2 -n session-name -f values.json -s something-very-secret -r
