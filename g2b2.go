@@ -1,11 +1,14 @@
 package main
 
 import (
+        "bytes"
         "flag"
         "log"
         "fmt"
         "io"
         "io/ioutil"
+        "encoding/base64"
+        "encoding/gob"
         "os"
         "net/http"
         "encoding/json"
@@ -81,14 +84,47 @@ func attack_session(file, secret, name, sess *string){
         }
         log.Fatalf("Session Secret Not Found\n")
 }
+func desersess(sess *string){
+        if len(*sess) == 0{
+                log.Fatalf("No Session to Deserialize")
+        }
+        sessdata, err := base64.StdEncoding.DecodeString(*sess)
+        if err != nil {
+                log.Fatalf("Could not decode session.")
+        }
+        parts := bytes.SplitN(sessdata, []byte("|"), 3)
+        if len(parts) != 3 {
+                log.Fatalf("Invalid Session Data.")
+        }
+        var contents map[interface{}]interface{}
+        dstdecoded := make([]byte, base64.URLEncoding.EncodedLen(len(parts[1])))
+        n, err := base64.URLEncoding.Decode(dstdecoded, parts[1])
+        if err != nil {
+                log.Fatalf("Could not decode session contents.")
+        }
+        dec := gob.NewDecoder(bytes.NewBuffer(dstdecoded[:n]))
+        if err := dec.Decode(&contents); err != nil {
+                log.Fatalf(err.Error())
+                log.Fatalf("Could not deserialize session contents.")
+        }
+        fmt.Printf("The contents of the session are.\n")
+        for i, j := range contents {
+                fmt.Printf("\tKey %s -> Value %s\n", i, j)
+        }
+}
 func main(){
         name := flag.String("n", "", "The name of the cookie when constructing or attacking.")
-        secret := flag.String("s", "", "Specify a secret to attack, or user a particular secret when reconstructing")
-        sess := flag.String("v", "", "The value of the session string that will be attacked")
+        secret := flag.String("s", "", "Specify a secret to attack, or user a particular secret when reconstructing.")
+        sess := flag.String("v", "", "The value of the session string that will be attacked.")
         file := flag.String("f", "", "Json Encoded file containing key value pairs of the session when Reconstructing. File is supplementary list of passwords when attacking.")
-        rebuild := flag.Bool("r", false, "True if you are reconstructing the session")
+        deser := flag.Bool("d", false, "Deserialize if integrity only.")
+        rebuild := flag.Bool("r", false, "True if you are reconstructing the session.")
         flag.Parse()
-        
+       
+        if *deser {
+                desersess(sess)
+                os.Exit(0)
+        } 
         if len(*name) == 0 {
                 log.Fatalf("Name must be set to attack or reconstruct a session.\n")
         }  
