@@ -198,4 +198,5 @@ var default_pws = []string{
         "GOTLongLiveSessionStore",
         "s3cr3t",
         "something-very-secret",
+        "T0PS3CR3T-CHANGEME-PLZ",
 }
