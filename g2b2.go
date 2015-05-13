@@ -128,8 +128,8 @@ func main(){
         flag.Parse()
 
         if *deser {
-                os.Exit(0)
                 desersess(sess)
+                os.Exit(0)
         }
         if len(*name) == 0 {
                 log.Fatalf("Name must be set to attack or reconstruct a session.\n")
